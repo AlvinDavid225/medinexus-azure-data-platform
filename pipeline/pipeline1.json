@@ -19,7 +19,7 @@
 				}
 			},
 			{
-				"name": "Lookup1",
+				"name": "Read Source Tables List",
 				"type": "Lookup",
 				"dependsOn": [],
 				"policy": {
