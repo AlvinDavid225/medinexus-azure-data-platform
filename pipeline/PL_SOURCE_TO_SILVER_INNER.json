@@ -334,7 +334,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"expression": {
-						"value": "@not(coalesce(activity('Read Table Details').output.firstRow.load_type, 'FULL'))",
+						"value": "@not(equals(coalesce(activity('Read Table Details').output.firstRow.load_type, 'FULL'), 'FULL'))",
 						"type": "Expression"
 					},
 					"ifTrueActivities": [
