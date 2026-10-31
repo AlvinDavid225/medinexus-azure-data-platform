@@ -1,0 +1,36 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "adf-medinexus-dev"
+		},
+		"LS_ADLS_properties_typeProperties_url": {
+			"value": "https://stmedinexusdev.dfs.core.windows.net/"
+		},
+		"LS_AzureDatabricks1_properties_typeProperties_existingClusterId": {
+			"value": "1027-224127-nbi5bpuj"
+		},
+		"LS_AzureKeyVault1_properties_typeProperties_baseUrl": {
+			"value": "https://kv-medinexus-dev.vault.azure.net/"
+		},
+		"LS_AzureSqlDatabase_properties_typeProperties_server": {
+			"value": "medinexus-server.database.windows.net"
+		},
+		"LS_AzureSqlDatabase_properties_typeProperties_database": {
+			"value": "sql-db-medinexus"
+		},
+		"LS_AzureSqlDatabase_properties_typeProperties_userName": {
+			"value": "sqladminmedinexus"
+		},
+		"LS_PostgreSql_properties_typeProperties_server": {
+			"value": "ep-round-credit-b51czq3g-pooler.c-7.us-east-2.aws.neon.tech"
+		},
+		"LS_PostgreSql_properties_typeProperties_database": {
+			"value": "neondb"
+		},
+		"LS_PostgreSql_properties_typeProperties_username": {
+			"value": "neondb_owner"
+		}
+	}
+}
