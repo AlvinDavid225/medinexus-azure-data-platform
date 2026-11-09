@@ -792,60 +792,47 @@ The Gold datasets operate at different grains, so their row counts should not be
 
 # Healthcare Analytics Dashboard
 
-MediNexus includes a Databricks Healthcare Analytics Dashboard.
+MediNexus includes a **Databricks Healthcare Analytics Dashboard** built on the curated Gold datasets.
 
-The dashboard is organized into analytical views such as:
+The dashboard provides four analytical views:
 
-1. Executive Healthcare Overview
-2. Patient Analytics
-3. Hospital Performance
-4. Laboratory Analytics
+1. **Executive Healthcare Overview**
+2. **Patient Analytics**
+3. **Hospital Performance**
+4. **Laboratory Analytics**
 
-<!-- SCREENSHOT PLACEHOLDER
-Add screenshot of Executive Healthcare Overview here.
+## Executive Healthcare Overview
 
-Suggested file:
-docs/images/dashboard-executive-overview.png
--->
+Provides a high-level view of healthcare metrics and overall platform data.
 
-```text
-[ SCREENSHOT — EXECUTIVE HEALTHCARE OVERVIEW ]
-```
-
-<!-- SCREENSHOT PLACEHOLDER
-Add screenshot of Patient Analytics here.
-
-Suggested file:
-docs/images/dashboard-patient-analytics.png
--->
-
-```text
-[ SCREENSHOT — PATIENT ANALYTICS ]
-```
-
-<!-- SCREENSHOT PLACEHOLDER
-Add screenshot of Hospital Performance here.
-
-Suggested file:
-docs/images/dashboard-hospital-performance.png
--->
-
-```text
-[ SCREENSHOT — HOSPITAL PERFORMANCE ]
-```
-
-<!-- SCREENSHOT PLACEHOLDER
-Add screenshot of Laboratory Analytics here.
-
-Suggested file:
-docs/images/dashboard-laboratory-analytics.png
--->
-
-```text
-[ SCREENSHOT — LABORATORY ANALYTICS ]
-```
+![Executive Healthcare Overview](./screenshots/dashboards/dashboard-executive-overview.png)
 
 ---
+
+## Patient Analytics
+
+Provides patient-level and population-oriented analytical views based on the curated healthcare data.
+
+![Patient Analytics](./screenshots/dashboards/dashboard-patient-analytics.png)
+
+---
+
+## Hospital Performance
+
+Provides analytical views for hospital-level metrics and performance.
+
+![Hospital Performance](./screenshots/dashboards/dashboard-hospital-performance.png)
+
+---
+
+## Laboratory Analytics
+
+Provides analytical views of laboratory testing activity and related healthcare metrics.
+
+![Laboratory Analytics](./screenshots/dashboards/dashboard-laboratory-analytics.png)
+
+The dashboard consumes the **Gold-layer datasets** produced by the MediNexus data pipeline, providing a final analytics and consumption layer for the platform.
+
 
 # Databricks Genie
 
