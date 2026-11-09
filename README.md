@@ -40,7 +40,7 @@ The result is a **reusable data platform** where multiple datasets can be proces
 
 ## Architecture
 
-MediNexus follows a **metadata-driven Azure data engineering architecture** that integrates multiple healthcare data sources, processes them through a Medallion Architecture, and delivers curated datasets for analytics.
+MediNexus follows a **metadata-driven Azure data engineering architecture** that integrates multiple healthcare data sources and processes them through a **Landing → Bronze → Silver → Gold** Medallion Architecture.
 
 ![MediNexus Architecture](./screenshots/architecture/medinexus-architecture.png)
 
@@ -48,22 +48,14 @@ MediNexus follows a **metadata-driven Azure data engineering architecture** that
 
 **Data Sources → Azure Data Factory → Landing → Bronze → Silver → Gold → Analytics**
 
-The platform uses a **Medallion Architecture** to progressively process data from raw ingestion to analytics-ready datasets:
-
-- **Landing** — raw source data is ingested into the Databricks-accessible landing area.
-- **Bronze** — ingested data is stored as Delta tables.
-- **Silver** — data is cleaned, standardized, validated, and processed according to the configured load strategy.
-- **Gold** — curated datasets are created for healthcare analytics and reporting.
-
-The main platform components work together as follows:
-
-- **Data Sources:** Neon PostgreSQL provides hospital, doctor, and patient data, while CSV files provide laboratory and insurance data.
-- **Orchestration:** Azure Data Factory manages metadata-driven ingestion and pipeline execution using configuration stored in Azure SQL Database.
-- **Transformation:** Azure Databricks and PySpark process the data across the Bronze, Silver, and Gold layers using Delta Lake.
-- **Governance & Security:** Unity Catalog provides data governance, while Azure Key Vault manages secure credentials.
-- **Monitoring & Notification:** Azure SQL maintains watermark and audit information, while Logic Apps sends automated execution notifications.
-- **Consumption:** Curated Gold datasets are exposed through Databricks Dashboards and Genie.
-- **Source Control:** GitHub maintains the Azure Data Factory and Databricks project assets.
+- **Azure Data Factory** — metadata-driven ingestion and orchestration
+- **Azure Databricks + PySpark** — data transformation and processing
+- **Delta Lake** — storage across the Bronze, Silver, and Gold layers
+- **Azure SQL Database** — metadata, watermark, and audit management
+- **Unity Catalog** — data governance
+- **Azure Key Vault** — secure credential management
+- **Logic Apps** — execution notifications
+- **Databricks Dashboards & Genie** — analytics and data consumption
 
 ---
 
@@ -117,8 +109,6 @@ These datasets use the same metadata-driven ingestion framework and are processe
 |---|---|---|---|
 | **Neon PostgreSQL** | hospitals, doctors, patients | PostgreSQL | Azure Data Factory |
 | **ADLS CSV** | lab_results, insurance_providers | CSV | Azure Data Factory |
-
-This source-independent design allows MediNexus to process different data sources through a reusable ingestion framework.
 
 ---
 
@@ -181,8 +171,6 @@ MediNexus currently produces three major Gold datasets:
 - `patient_360`
 - `hospital_daily_summary`
 - `lab_test_trends`
-
-These datasets are consumed by **Databricks Dashboards and Genie** for healthcare analytics and reporting.
 
 ### 1. Patient 360
 
