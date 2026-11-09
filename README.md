@@ -618,65 +618,121 @@ The architecture provides a **reusable, metadata-driven orchestration framework*
 
 # Databricks Architecture
 
-Databricks is responsible for distributed data processing and transformation.
+Azure Databricks is the **data processing and transformation layer** of MediNexus. PySpark notebooks process the ingested data across the Bronze, Silver, and Gold layers using Delta Lake.
 
-The workspace is organized using Unity Catalog.
+The Databricks environment is organized using **Unity Catalog**.
 
-Conceptually:
+![MediNexus Databricks Catalog Structure](./screenshots/databricks/unity-catalog/databricks-catalog-structure.png)
+
+The primary catalog is:
 
 ```text
-Catalog
-└── adb_medinexus
-    ├── landing
-    ├── bronze
-    ├── silver
-    └── gold
+adb_medinexus
+├── landing
+├── bronze
+├── silver
+└── gold
 ```
 
-The project uses Delta tables throughout the processing layers.
+This structure separates the different processing stages while providing a consistent governance boundary for the platform.
 
 ---
 
 # Unity Catalog
 
-Unity Catalog provides the governance layer for the Databricks environment.
+Unity Catalog provides the **governance and data organization layer** for MediNexus.
 
-MediNexus uses Unity Catalog for:
+It is used for:
 
-- Catalog organization
-- Schema organization
+- Catalog and schema organization
 - Data access governance
-- Managed metadata
+- Centralized metadata management
 - External storage integration
+- Access to Delta tables and volumes
 
-The project also uses an external volume for the Landing layer.
-
-Example:
+The Landing layer uses an external volume:
 
 ```text
 adb_medinexus.landing.landing_volume
 ```
 
+![MediNexus Landing Volume](./screenshots/databricks/databricks-landing-volume.png)
+
+The external volume provides the Databricks-accessible storage location used by the Landing layer.
+
+---
+
+# Medallion Architecture in Databricks
+
+MediNexus implements a **Bronze → Silver → Gold** processing architecture using Delta tables.
+
+## Bronze
+
+The Bronze layer contains the ingested datasets converted into Delta tables.
+
+![MediNexus Bronze Tables](./screenshots/databricks/databricks-bronze-tables.png)
+
+Current Bronze datasets include:
+
+- `hospitals`
+- `doctors`
+- `patients`
+- `lab_results`
+- `insurance_providers`
+
+---
+
+## Silver
+
+The Silver layer contains cleaned and transformed datasets used for downstream processing.
+
+![MediNexus Silver Tables](./screenshots/databricks/databricks-silver-tables.png)
+
+Silver processing includes transformations such as:
+
+- Standardization
+- Deduplication
+- Incremental processing
+- Merge/upsert processing
+- Append processing
+- Data quality validation
+
+---
+
+## Gold
+
+The Gold layer contains analytics-ready datasets designed for healthcare consumption.
+
+![MediNexus Gold Tables](./screenshots/databricks/databricks-gold-tables.png)
+
+MediNexus currently produces:
+
+- `patient_360`
+- `hospital_daily_summary`
+- `lab_test_trends`
+
+These datasets are consumed by Databricks Dashboards and Genie for analytics.
+
 ---
 
 # Delta Lake
 
-Delta Lake is used as the storage format for the Bronze, Silver, and Gold datasets.
+Delta Lake is used as the storage format for the **Bronze, Silver, and Gold** datasets.
 
-Benefits demonstrated in the project include:
+The project uses Delta Lake capabilities including:
 
 - ACID transactions
 - Reliable table updates
 - Schema enforcement
-- Schema evolution capabilities
+- Schema evolution
 - Time travel
 - Transaction history
-- MERGE operations
-- Transaction logs
+- `MERGE` operations
+- Transaction logging
 
-Delta transaction history is maintained through the `_delta_log` directory.
+Delta Lake maintains transaction history through the `_delta_log` directory associated with each Delta table.
 
----
+Together, **Delta Lake + Unity Catalog + Databricks** provide the storage, processing, and governance foundation for the MediNexus data platform.
 
 # Data Quality Validation
 
