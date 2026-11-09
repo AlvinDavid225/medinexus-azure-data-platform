@@ -452,17 +452,9 @@ This structure separates the different processing stages while providing a consi
 
 # Unity Catalog
 
-Unity Catalog provides the **governance and data organization layer** for MediNexus.
+MediNexus uses **Unity Catalog** to organize and govern the Databricks data platform through the `adb_medinexus` catalog and its `landing`, `bronze`, `silver`, and `gold` schemas.
 
-It is used for:
-
-- Catalog and schema organization
-- Data access governance
-- Centralized metadata management
-- External storage integration
-- Access to Delta tables and volumes
-
-The Landing layer uses an external volume:
+The Landing layer uses the external volume:
 
 ```text
 adb_medinexus.landing.landing_volume
@@ -470,81 +462,43 @@ adb_medinexus.landing.landing_volume
 
 ![MediNexus Landing Volume](./screenshots/databricks/unity-catalog/databricks-landing-volume.png)
 
-The external volume provides the Databricks-accessible storage location used by the Landing layer.
+The external volume provides the Databricks-accessible storage location for the Landing layer.
 
----
+## Medallion Architecture in Databricks
 
-# Medallion Architecture in Databricks
+MediNexus implements **Bronze → Silver → Gold** processing using Delta tables in Databricks.
 
-MediNexus implements a **Bronze → Silver → Gold** processing architecture using Delta tables.
+### Bronze
 
-## Bronze
-
-The Bronze layer contains the ingested datasets converted into Delta tables.
+Bronze stores the ingested source datasets as Delta tables.
 
 ![MediNexus Bronze Tables](./screenshots/databricks/unity-catalog/databricks-bronze-tables.png)
 
-Current Bronze datasets include:
+Current datasets: `hospitals`, `doctors`, `patients`, `lab_results`, and `insurance_providers`.
 
-- `hospitals`
-- `doctors`
-- `patients`
-- `lab_results`
-- `insurance_providers`
+### Silver
 
----
-
-## Silver
-
-The Silver layer contains cleaned and transformed datasets used for downstream processing.
+Silver contains cleaned and transformed datasets with **standardization, deduplication, incremental processing, Full/Append/Merge handling, and data quality validation**.
 
 ![MediNexus Silver Tables](./screenshots/databricks/unity-catalog/databricks-silver-tables.png)
 
-Silver processing includes transformations such as:
+### Gold
 
-- Standardization
-- Deduplication
-- Incremental processing
-- Merge/upsert processing
-- Append processing
-- Data quality validation
-
----
-
-## Gold
-
-The Gold layer contains analytics-ready datasets designed for healthcare consumption.
-
-![MediNexus Gold Tables](./screenshots/databricks/unity-catalog/databricks-gold-tables.png)
-
-MediNexus currently produces:
+Gold contains the curated analytical datasets:
 
 - `patient_360`
 - `hospital_daily_summary`
 - `lab_test_trends`
 
-These datasets are consumed by Databricks Dashboards and Genie for analytics.
+![MediNexus Gold Tables](./screenshots/databricks/unity-catalog/databricks-gold-tables.png)
 
 ---
 
 # Delta Lake
 
-Delta Lake is used as the storage format for the **Bronze, Silver, and Gold** datasets.
+Delta Lake is used as the storage format for the **Bronze, Silver, and Gold** datasets. MediNexus uses Delta Lake for **ACID transactions, reliable table updates, schema enforcement and evolution, time travel, transaction history, and `MERGE` operations**.
 
-The project uses Delta Lake capabilities including:
-
-- ACID transactions
-- Reliable table updates
-- Schema enforcement
-- Schema evolution
-- Time travel
-- Transaction history
-- `MERGE` operations
-- Transaction logging
-
-Delta Lake maintains transaction history through the `_delta_log` directory associated with each Delta table.
-
-Together, **Delta Lake + Unity Catalog + Databricks** provide the storage, processing, and governance foundation for the MediNexus data platform.
+Each Delta table maintains its transaction history through the `_delta_log` directory. Together, **Delta Lake, Unity Catalog, and Databricks** provide the storage, processing, and governance foundation for the MediNexus data platform.
 
 # Data Quality Validation
 
