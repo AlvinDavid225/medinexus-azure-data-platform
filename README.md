@@ -6,22 +6,37 @@
 
 ## Project Overview
 
-**MediNexus** is an end-to-end, metadata-driven Azure Data Engineering platform for ingesting, transforming, governing, and delivering healthcare data from multiple source systems as analytics-ready datasets.
+**MediNexus** is a metadata-driven healthcare data engineering platform designed to integrate operational healthcare data and external partner data into a centralized analytics platform.
 
-The platform uses a **Medallion Architecture**:
+The platform ingests data from **Neon PostgreSQL and CSV-based healthcare sources**, processes it through a **Landing → Bronze → Silver → Gold** architecture, and delivers curated datasets for analytics through Databricks Dashboards and Genie.
 
-**Landing → Bronze → Silver → Gold**
+---
 
-- **Azure Data Factory** — metadata-driven ingestion and pipeline orchestration
-- **Azure Databricks + PySpark** — scalable data transformation
-- **Delta Lake** — reliable data storage and processing
-- **Azure SQL Database** — centralized metadata, watermark, and audit control
-- **Unity Catalog** — data governance and access control
-- **Azure Key Vault** — secure credential management
-- **Logic Apps** — automated execution notifications
-- **Databricks Dashboards & Genie** — analytics and data consumption
+## Business Problem & Use Case
 
-Instead of maintaining separate hard-coded pipelines for individual datasets, MediNexus uses **centralized metadata** to control source selection, load type, watermarks, merge keys, and target processing. This enables the same reusable framework to process multiple healthcare datasets and simplifies onboarding of new sources.
+Healthcare organizations may have patient, doctor, and hospital data in operational systems while receiving laboratory and insurance information from external partners.
+
+This creates three core challenges:
+
+- **Data is fragmented:** Patient, laboratory, and insurance data exist in different sources and do not automatically align.
+- **Source onboarding is difficult:** Adding a new hospital, dataset, or partner feed can require additional pipeline development.
+- **Reporting can become stale:** Without centralized execution tracking and monitoring, failed or incomplete processing may go unnoticed.
+
+### MediNexus Solution
+
+MediNexus addresses these challenges through a **reusable, metadata-driven Azure Data Engineering framework**.
+
+- Azure Data Factory uses centralized metadata to control source ingestion and processing.
+- The same framework supports multiple sources and **Full, Append, and Merge** load strategies.
+- Databricks processes the data through the **Landing → Bronze → Silver → Gold** architecture.
+- Azure SQL Database maintains metadata, watermark, and audit information.
+- Unity Catalog provides data governance and controlled access to the Databricks data platform.
+- Logic Apps provides automated pipeline execution notifications.
+- Curated Gold datasets are exposed through Databricks Dashboards and Genie.
+
+The result is a **reusable and scalable data platform** where onboarding and processing new datasets can be driven primarily through metadata rather than separate hard-coded pipelines.
+
+---
 
 ## Architecture
 
@@ -33,42 +48,15 @@ MediNexus follows a **metadata-driven Azure data engineering architecture** that
 
 **Data Sources → Azure Data Factory → Landing → Bronze → Silver → Gold → Analytics**
 
-- **Data Sources:** Neon PostgreSQL provides hospital, doctor, and patient data, while external CSV files provide lab results and insurance data.
+- **Data Sources:** Neon PostgreSQL provides hospital, doctor, and patient data, while CSV files provide laboratory and insurance data.
 - **Orchestration:** Azure Data Factory manages metadata-driven ingestion and pipeline execution using configuration stored in Azure SQL Database.
-- **Transformation:** Azure Databricks and PySpark process the data using Delta Lake across the Bronze, Silver, and Gold layers.
-- **Governance & Security:** Unity Catalog manages data governance, while Azure Key Vault provides secure credential management.
-- **Monitoring & Notification:** Azure SQL maintains watermark and audit information, and Logic Apps sends automated execution notifications.
-- **Consumption:** Curated Gold datasets are exposed through Databricks dashboards and Genie.
+- **Transformation:** Azure Databricks and PySpark process the data across the Bronze, Silver, and Gold layers using Delta Lake.
+- **Governance & Security:** Unity Catalog provides data governance, while Azure Key Vault manages secure credentials.
+- **Monitoring & Notification:** Azure SQL maintains watermark and audit information, while Logic Apps sends automated execution notifications.
+- **Consumption:** Curated Gold datasets are exposed through Databricks Dashboards and Genie.
 - **Source Control:** GitHub maintains the Azure Data Factory and Databricks project assets.
 
-The architecture is designed around **reusable, metadata-driven processing**, allowing multiple datasets to be handled through a common pipeline framework rather than separate hard-coded pipelines.
-
-## Business Problem
-
-Healthcare data is often distributed across operational databases and external file-based sources. This creates challenges around **data integration, transformation consistency, monitoring, scalability, and reporting**.
-
-MediNexus addresses these challenges through a centralized, **metadata-driven Azure Data Engineering platform** that provides reusable ingestion pipelines, structured data processing, centralized audit and watermark management, governance, and analytics-ready datasets.
-
----
-
-## Key Objectives
-
-MediNexus was built to:
-
-- Implement an end-to-end Azure data engineering pipeline.
-- Build reusable, metadata-driven ingestion.
-- Integrate multiple healthcare data sources.
-- Support **Full, Append, and Merge** load strategies.
-- Implement incremental processing using watermarks.
-- Implement a **Bronze → Silver → Gold** Medallion Architecture.
-- Use Delta Lake for reliable data processing and storage.
-- Implement centralized governance with Unity Catalog.
-- Maintain audit and execution information.
-- Produce analytics-ready Gold datasets.
-- Provide automated pipeline execution notifications.
-- Enable healthcare analytics through Databricks dashboards and Genie.
-- Maintain project assets using GitHub source control.
-- Establish a foundation for future CI/CD implementation.
+The architecture is designed around **reusable, metadata-driven processing**, allowing multiple datasets to be handled through a common pipeline framework.
 
 ---
 
@@ -88,7 +76,6 @@ MediNexus was built to:
 | **GitHub** | Source control |
 | **Databricks Dashboards** | Healthcare analytics |
 | **Databricks Genie** | Natural-language data exploration |
-
 ## Source Systems
 
 MediNexus integrates healthcare data from multiple source systems and file-based datasets through a common metadata-driven ingestion framework.
