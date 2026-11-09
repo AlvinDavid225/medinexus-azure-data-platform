@@ -35,7 +35,7 @@ This metadata-driven design allows the same reusable pipeline framework to proce
 ## Architecture
 MediNexus follows a metadata-driven Azure data engineering architecture that separates source ingestion, data transformation, governance, orchestration, and analytics consumption.
 
-![MediNexus Architecture](./screenshots/medinexus-architecture.png)
+![MediNexus Architecture](./screenshots/architecture/medinexus-architecture.png)
 
 he platform follows the flow:
 
