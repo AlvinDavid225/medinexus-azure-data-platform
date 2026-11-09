@@ -6,109 +6,42 @@
 
 ## Project Overview
 
-**MediNexus** is an end-to-end, metadata-driven Azure Data Engineering platform designed to demonstrate how healthcare data from multiple source systems can be ingested, transformed, governed, monitored, and delivered as analytics-ready datasets.
+**MediNexus** is an end-to-end, metadata-driven Azure Data Engineering platform for ingesting, transforming, governing, and delivering healthcare data from multiple source systems as analytics-ready datasets.
 
-The platform implements a **Medallion Architecture** with clearly separated processing layers:
+The platform uses a **Medallion Architecture**:
 
-- **Landing** — raw source data is ingested into a common landing zone.
-- **Bronze** — source data is persisted in Delta format with minimal transformation.
-- **Silver** — data is standardized, validated, and transformed into clean, current-state datasets.
-- **Gold** — curated datasets are created for healthcare analytics and reporting.
+**Landing → Bronze → Silver → Gold**
 
-**Azure Data Factory (ADF)** provides orchestration and metadata-driven ingestion, while **Azure Databricks, Apache Spark, and Delta Lake** provide scalable data transformation and processing.
+- **Azure Data Factory** — metadata-driven ingestion and pipeline orchestration
+- **Azure Databricks + PySpark** — scalable data transformation
+- **Delta Lake** — reliable data storage and processing
+- **Azure SQL Database** — centralized metadata, watermark, and audit control
+- **Unity Catalog** — data governance and access control
+- **Azure Key Vault** — secure credential management
+- **Logic Apps** — automated execution notifications
+- **Databricks Dashboards & Genie** — analytics and data consumption
 
-A central **Azure SQL Database control framework** drives the processing logic instead of requiring a separate hard-coded pipeline for each table. The metadata configuration determines:
-
-- Which source tables and files are active
-- Which source system should be processed
-- Source and target table information
-- Full or incremental load strategy
-- Watermark columns for incremental processing
-- Merge keys for applicable datasets
-- Bronze, Silver, and Gold target definitions
-- Processing stage and execution configuration
-
-The platform also maintains dedicated **watermark and audit information** to support incremental processing and operational monitoring.
-
-This metadata-driven design allows the same reusable pipeline framework to process multiple healthcare datasets and makes onboarding additional datasets primarily a configuration task rather than a new pipeline-development task.
+Instead of maintaining separate hard-coded pipelines for individual datasets, MediNexus uses **centralized metadata** to control source selection, load type, watermarks, merge keys, and target processing. This enables the same reusable framework to process multiple healthcare datasets and simplifies onboarding of new sources.
 
 ## Architecture
-MediNexus follows a metadata-driven Azure data engineering architecture that separates source ingestion, data transformation, governance, orchestration, and analytics consumption.
+
+MediNexus follows a **metadata-driven Azure data engineering architecture** that integrates multiple healthcare data sources, processes them through a Medallion Architecture, and delivers curated datasets for analytics.
 
 ![MediNexus Architecture](./screenshots/architecture/medinexus-architecture.png)
 
-he platform follows the flow:
+### Architecture Flow
 
-Data Sources → Azure Data Factory → Landing → Bronze → Silver → Gold → Analytics
+**Data Sources → Azure Data Factory → Landing → Bronze → Silver → Gold → Analytics**
 
-with supporting services for metadata management, governance, security, monitoring, and source control.
+- **Data Sources:** Neon PostgreSQL provides hospital, doctor, and patient data, while external CSV files provide lab results and insurance data.
+- **Orchestration:** Azure Data Factory manages metadata-driven ingestion and pipeline execution using configuration stored in Azure SQL Database.
+- **Transformation:** Azure Databricks and PySpark process the data using Delta Lake across the Bronze, Silver, and Gold layers.
+- **Governance & Security:** Unity Catalog manages data governance, while Azure Key Vault provides secure credential management.
+- **Monitoring & Notification:** Azure SQL maintains watermark and audit information, and Logic Apps sends automated execution notifications.
+- **Consumption:** Curated Gold datasets are exposed through Databricks dashboards and Genie.
+- **Source Control:** GitHub maintains the Azure Data Factory and Databricks project assets.
 
-Architecture Components
-
-Data Sources
-
-Neon PostgreSQL — provides the internal healthcare data for hospitals, doctors, and patients.
-
-ADLS Gen2 / CSV partner feeds — provides external lab_results and insurance_providers data.
-
-Data Ingestion
-
-Azure Data Factory provides the metadata-driven ingestion framework.
-
-The same reusable pipeline processes multiple source tables and files based on configuration stored in Azure SQL Database.
-
-Metadata & Orchestration
-
-Azure SQL Database stores the control metadata, watermark information, and audit records.
-
-Azure Data Factory orchestrates the complete workflow and passes a common adf_run_id across pipeline stages for traceable execution.
-
-Data Transformation
-
-Data is processed using Azure Databricks, Apache Spark, PySpark, and Delta Lake.
-
-The Medallion Architecture separates processing into:
-
-Bronze — source data persisted with minimal transformation.
-
-Silver — standardized and validated data.
-
-Gold — curated datasets designed for analytics and reporting.
-
-Governance & Security
-
-Unity Catalog provides centralized data governance and access control.
-
-Azure Key Vault supports secure management of secrets and credentials.
-
-Azure Logic Apps is used for automated email notification after pipeline execution.
-
-Source Control / CI-CD
-
-GitHub is used to version-control the Azure Data Factory and Databricks project assets.
-
-Consumption
-
-Curated Gold datasets are consumed through Databricks analytical dashboards and Databricks Genie interfaces.
-
-End-to-End Data Flow
-
-Source data is available in PostgreSQL and external CSV feeds.
-
-Azure Data Factory reads the active metadata configuration from Azure SQL Database.
-
-The appropriate source data is copied into the common Landing layer.
-
-Databricks processes the landed data into the Bronze layer.
-
-Bronze data is transformed into standardized Silver Delta tables.
-
-Silver data is used to create curated Gold data products.
-
-Gold datasets are consumed through Databricks analytics and Genie.
-
-Pipeline execution is recorded in the audit framework, and the execution status is communicated through Logic Apps.
----
+The architecture is designed around **reusable, metadata-driven processing**, allowing multiple datasets to be handled through a common pipeline framework rather than separate hard-coded pipelines.
 
 # Business Problem
 
