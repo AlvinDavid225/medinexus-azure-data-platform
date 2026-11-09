@@ -332,6 +332,15 @@ After the main processing workflow, `PL_SEND_EMAIL` handles execution notificati
 
 The pipeline sends the execution information to the Logic App, which triggers an email notification containing the processing status and audit information for the master run.
 
+## Pipeline Monitoring and Audit
+
+MediNexus maintains table-level execution tracking through the Azure SQL `ctrl.audit_log` table. Each execution records the ADF run ID, table ID, processing stage, status, record count, and execution timestamps.
+
+The `ctrl.watermark` table maintains the incremental processing state for datasets using watermark-based loading.
+
+![ADF Audit Log](./screenshots/azure-sql-metadata/sql-audit-log-success.png)
+
+
 ### End-to-End ADF Flow
 
 The complete orchestration follows this sequence:
@@ -379,11 +388,13 @@ A successful master execution is recorded through the ADF audit framework and fo
 
 This architecture provides a **reusable, metadata-driven orchestration framework** in which source ingestion, table-level processing, transformation, auditing, and notification are handled through coordinated ADF pipelines.
 
-# Databricks Architecture
+## Azure Databricks
 
-Azure Databricks is the **data processing and transformation layer** of MediNexus. PySpark notebooks process the ingested data across the Bronze, Silver, and Gold layers using Delta Lake.
+Azure Databricks is the **data processing and transformation layer** of MediNexus. PySpark notebooks process data across the Bronze, Silver, and Gold layers using Delta Lake.
 
-The Databricks environment is organized using **Unity Catalog**.
+### Databricks Architecture
+
+The Databricks environment is organized and governed using **Unity Catalog**.
 
 ![MediNexus Databricks Catalog Structure](./screenshots/databricks/unity-catalog/databricks-catalog-structure.png)
 
@@ -397,13 +408,11 @@ adb_medinexus
 └── gold
 ```
 
-This structure separates the different processing stages while providing a consistent governance boundary for the platform.
+This structure separates the platform's processing layers within a centralized governance boundary.
 
----
+### Unity Catalog
 
-# Unity Catalog
-
-MediNexus uses **Unity Catalog** to organize and govern the Databricks data platform through the `adb_medinexus` catalog and its `landing`, `bronze`, `silver`, and `gold` schemas.
+MediNexus uses **Unity Catalog** to organize Databricks data assets through the `adb_medinexus` catalog and its `landing`, `bronze`, `silver`, and `gold` schemas.
 
 The Landing layer uses the external volume:
 
@@ -415,27 +424,29 @@ adb_medinexus.landing.landing_volume
 
 The external volume provides the Databricks-accessible storage location for the Landing layer.
 
-## Medallion Architecture in Databricks
+### Medallion Architecture
 
 MediNexus implements **Bronze → Silver → Gold** processing using Delta tables in Databricks.
 
-### Bronze
+#### Bronze
 
 Bronze stores the ingested source datasets as Delta tables.
 
 ![MediNexus Bronze Tables](./screenshots/databricks/unity-catalog/databricks-bronze-tables.png)
 
-Current datasets: `hospitals`, `doctors`, `patients`, `lab_results`, and `insurance_providers`.
+Current datasets:
 
-### Silver
+`hospitals`, `doctors`, `patients`, `lab_results`, `insurance_providers`
 
-Silver contains cleaned and transformed datasets with **standardization, deduplication, incremental processing, Full/Append/Merge handling, and data quality validation**.
+#### Silver
+
+Silver contains cleaned and transformed datasets with **standardization, deduplication, incremental processing, Full/Append/Merge handling, and validation**.
 
 ![MediNexus Silver Tables](./screenshots/databricks/unity-catalog/databricks-silver-tables.png)
 
-### Gold
+#### Gold
 
-Gold contains the curated analytical datasets:
+Gold contains the curated analytical datasets used by the consumption layer:
 
 - `patient_360`
 - `hospital_daily_summary`
@@ -443,71 +454,68 @@ Gold contains the curated analytical datasets:
 
 ![MediNexus Gold Tables](./screenshots/databricks/unity-catalog/databricks-gold-tables.png)
 
+### Delta Lake
+
+Delta Lake is the storage format used for the **Bronze, Silver, and Gold** datasets.
+
+MediNexus uses Delta Lake for:
+
+- ACID transactions
+- Reliable table updates
+- Schema enforcement and evolution
+- Time travel and transaction history
+- `MERGE` operations
+
+Each Delta table maintains its transaction history through the `_delta_log` directory.
+
+**Databricks + Delta Lake + Unity Catalog** provide the processing, storage, and governance foundation of the MediNexus platform.
+
 ---
 
-# Delta Lake
+## Data Quality & Validation
 
-Delta Lake is used as the storage format for the **Bronze, Silver, and Gold** datasets. MediNexus uses Delta Lake for **ACID transactions, reliable table updates, schema enforcement and evolution, time travel, transaction history, and `MERGE` operations**.
+Data quality was **manually validated and reconciled** across the Medallion layers after pipeline execution.
 
-Each Delta table maintains its transaction history through the `_delta_log` directory. Together, **Delta Lake, Unity Catalog, and Databricks** provide the storage, processing, and governance foundation for the MediNexus data platform.
+Validation included:
 
-# Data Quality Validation
-
-Data quality checks were performed across the Medallion layers.
-
-Examples include:
-
-### Key validation
-
-- Null primary/business keys
-- Duplicate business keys
-
-### Record-count validation
-
-- Source-to-Bronze counts
-- Bronze-to-Silver counts
+- Key null and uniqueness checks
+- Source-to-Bronze record-count validation
+- Bronze-to-Silver record-count validation
 - Silver-to-Gold reconciliation
+- Independent validation of Gold analytical metrics
 
-### Metric reconciliation
-
-Gold metrics were independently reconciled against Silver data.
-
-Examples:
+Examples of reconciled metrics include:
 
 - Total laboratory tests
 - Abnormal tests
 - Critical tests
 - Unique patients
 - Active doctors
-- Monthly trends
+- Monthly laboratory trends
 
----
-
-# Data Validation Results
-
-The current project validation includes:
+### Validation Results
 
 | Dataset | Records |
 |---|---:|
-| Bronze hospitals | 50 |
-| Bronze doctors | 500 |
-| Bronze patients | 5,000 |
-| Bronze lab_results | 20 |
-| Bronze insurance_providers | 30 |
-| Silver hospitals | 50 |
-| Silver doctors | 500 |
-| Silver patients | 5,000 |
-| Silver lab_results | 20 |
-| Silver insurance_providers | 30 |
-| Gold patient_360 | 5,000 |
-| Gold hospital_daily_summary | 20 |
-| Gold lab_test_trends | 8 |
+| Bronze `hospitals` | 50 |
+| Bronze `doctors` | 500 |
+| Bronze `patients` | 5,000 |
+| Bronze `lab_results` | 20 |
+| Bronze `insurance_providers` | 30 |
+| Silver `hospitals` | 50 |
+| Silver `doctors` | 500 |
+| Silver `patients` | 5,000 |
+| Silver `lab_results` | 20 |
+| Silver `insurance_providers` | 30 |
+| Gold `patient_360` | 5,000 |
+| Gold `hospital_daily_summary` | 20 |
+| Gold `lab_test_trends` | 8 |
 
-The Gold datasets operate at different grains, so their row counts should not be expected to match the Silver source row counts directly.
+Gold datasets operate at different analytical grains, so their record counts are not expected to directly match the Silver source datasets.
 
 ---
 
-# Healthcare Analytics Dashboard
+## Healthcare Analytics Dashboard
 
 MediNexus includes a **Databricks Healthcare Analytics Dashboard** built on the curated Gold datasets.
 
@@ -518,42 +526,37 @@ The dashboard provides four analytical views:
 3. **Hospital Performance**
 4. **Laboratory Analytics**
 
-## Executive Healthcare Overview
+### Executive Healthcare Overview
 
 Provides a high-level view of healthcare metrics and overall platform data.
 
 ![Executive Healthcare Overview](./screenshots/dashboards/dashboard-executive-overview.png)
 
----
+### Patient Analytics
 
-## Patient Analytics
-
-Provides patient-level and population-oriented analytical views based on the curated healthcare data.
+Provides patient-level and population-oriented analytical views.
 
 ![Patient Analytics](./screenshots/dashboards/dashboard-patient-analytics.png)
 
----
+### Hospital Performance
 
-## Hospital Performance
-
-Provides analytical views for hospital-level metrics and performance.
+Provides hospital-level analytical metrics and performance views.
 
 ![Hospital Performance](./screenshots/dashboards/dashboard-hospital-performance.png)
 
----
-
-## Laboratory Analytics
+### Laboratory Analytics
 
 Provides analytical views of laboratory testing activity and related healthcare metrics.
 
 ![Laboratory Analytics](./screenshots/dashboards/dashboard-laboratory-analytics.png)
 
-The dashboard consumes the **Gold-layer datasets** produced by the MediNexus data pipeline, providing a final analytics and consumption layer for the platform.
+The dashboard consumes the **Gold-layer datasets** produced by the MediNexus data pipeline.
 
+---
 
 ## Databricks Genie
 
-MediNexus also includes a **Databricks Genie** experience for natural-language analytics. Users can ask questions about the curated Gold datasets in plain English without manually writing SQL.
+MediNexus also includes **Databricks Genie** for natural-language analytics. Users can ask questions about the curated Gold datasets in plain English without manually writing SQL.
 
 ### Examples
 
@@ -572,73 +575,15 @@ MediNexus also includes a **Databricks Genie** experience for natural-language a
   </tr>
 </table>
 
-# Pipeline Monitoring and Audit
-
-Pipeline execution is tracked using the centralized audit framework.
-
-Each processed table can generate an audit record containing:
-
-```text
-ADF Run ID
-Table ID
-Stage
-Status
-Records Written
-Start Time
-End Time
-```
-
-This provides visibility into individual table processing rather than relying only on the overall pipeline status.
-
 ---
 
-# Email Notification
+## Security and Governance
 
-MediNexus uses an Azure Logic App for pipeline notification.
-
-The architecture is:
-
-```text
-Azure Data Factory
-       |
-       | HTTP POST
-       v
-Azure Logic App
-       |
-       v
-Email Notification
-```
-
-The notification can contain:
-
-- Pipeline status
-- Run information
-- Table-level processing status
-- Records written
-- Execution information
-
-<!-- SCREENSHOT PLACEHOLDER
-Add successful MediNexus email notification screenshot.
-
-Suggested file:
-docs/images/pipeline-success-email.png
--->
-
-```text
-[ SCREENSHOT — SUCCESS EMAIL ]
-```
-
----
-
-# Security and Governance
-
-Security-related Azure services are incorporated into the platform.
-
-## Azure Key Vault
+### Azure Key Vault
 
 MediNexus uses **Azure Key Vault** to securely manage credentials required by the data platform. Secrets are stored in Key Vault rather than being hard-coded in pipeline configurations.
 
-The development environment contains secrets for the Databricks, Azure SQL Database, and PostgreSQL connections.
+The development environment contains configured secrets for the Databricks, Azure SQL Database, and PostgreSQL connections.
 
 <table>
   <tr>
@@ -654,12 +599,6 @@ The development environment contains secrets for the Databricks, Azure SQL Datab
     <td align="center"><b>Configured Secrets</b></td>
   </tr>
 </table>
-
-## Unity Catalog
-
-Unity Catalog provides centralized governance for Databricks data assets.
-
----
 
 ## Azure SQL Control Database
 
