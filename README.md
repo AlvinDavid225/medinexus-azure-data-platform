@@ -18,23 +18,23 @@ Healthcare organizations may have patient, doctor, and hospital data in operatio
 
 This creates three core challenges:
 
-- **Data is fragmented:** Patient, laboratory, and insurance data exist in different sources and do not automatically align.
-- **Source onboarding is difficult:** Adding a new hospital, dataset, or partner feed can require additional pipeline development.
-- **Reporting can become stale:** Without centralized execution tracking and monitoring, failed or incomplete processing may go unnoticed.
+- **Data fragmentation:** Healthcare data exists across different sources and does not automatically align.
+- **Source onboarding:** Adding new datasets or partner feeds can require additional pipeline development.
+- **Reporting reliability:** Failed or incomplete processing can result in stale or incomplete reports if execution is not centrally tracked.
 
 ### MediNexus Solution
 
 MediNexus addresses these challenges through a **reusable, metadata-driven Azure Data Engineering framework**.
 
 - Azure Data Factory uses centralized metadata to control source ingestion and processing.
-- The same framework supports multiple sources and **Full, Append, and Merge** load strategies.
-- Databricks processes the data through the **Landing → Bronze → Silver → Gold** architecture.
+- The framework supports multiple sources and **Full, Append, and Merge** load strategies.
+- Databricks processes data through the **Landing → Bronze → Silver → Gold** architecture.
 - Azure SQL Database maintains metadata, watermark, and audit information.
-- Unity Catalog provides data governance and controlled access to the Databricks data platform.
+- Unity Catalog provides data governance and controlled access.
 - Logic Apps provides automated pipeline execution notifications.
 - Curated Gold datasets are exposed through Databricks Dashboards and Genie.
 
-The result is a **reusable and scalable data platform** where onboarding and processing new datasets can be driven primarily through metadata rather than separate hard-coded pipelines.
+The result is a **reusable data platform** where multiple datasets can be processed through common pipeline logic rather than separate hard-coded pipelines.
 
 ---
 
@@ -48,6 +48,15 @@ MediNexus follows a **metadata-driven Azure data engineering architecture** that
 
 **Data Sources → Azure Data Factory → Landing → Bronze → Silver → Gold → Analytics**
 
+The platform uses a **Medallion Architecture** to progressively process data from raw ingestion to analytics-ready datasets:
+
+- **Landing** — raw source data is ingested into the Databricks-accessible landing area.
+- **Bronze** — ingested data is stored as Delta tables.
+- **Silver** — data is cleaned, standardized, validated, and processed according to the configured load strategy.
+- **Gold** — curated datasets are created for healthcare analytics and reporting.
+
+The main platform components work together as follows:
+
 - **Data Sources:** Neon PostgreSQL provides hospital, doctor, and patient data, while CSV files provide laboratory and insurance data.
 - **Orchestration:** Azure Data Factory manages metadata-driven ingestion and pipeline execution using configuration stored in Azure SQL Database.
 - **Transformation:** Azure Databricks and PySpark process the data across the Bronze, Silver, and Gold layers using Delta Lake.
@@ -55,8 +64,6 @@ MediNexus follows a **metadata-driven Azure data engineering architecture** that
 - **Monitoring & Notification:** Azure SQL maintains watermark and audit information, while Logic Apps sends automated execution notifications.
 - **Consumption:** Curated Gold datasets are exposed through Databricks Dashboards and Genie.
 - **Source Control:** GitHub maintains the Azure Data Factory and Databricks project assets.
-
-The architecture is designed around **reusable, metadata-driven processing**, allowing multiple datasets to be handled through a common pipeline framework.
 
 ---
 
@@ -76,6 +83,9 @@ The architecture is designed around **reusable, metadata-driven processing**, al
 | **GitHub** | Source control |
 | **Databricks Dashboards** | Healthcare analytics |
 | **Databricks Genie** | Natural-language data exploration |
+
+---
+
 ## Source Systems
 
 MediNexus integrates healthcare data from multiple source systems and file-based datasets through a common metadata-driven ingestion framework.
@@ -109,31 +119,12 @@ These datasets use the same metadata-driven ingestion framework and are processe
 | **ADLS CSV** | lab_results, insurance_providers | CSV | Azure Data Factory |
 
 This source-independent design allows MediNexus to process different data sources through a reusable ingestion framework.
-# Medallion Architecture
-
-MediNexus follows a Medallion Architecture consisting of:
-
-```text
-Source
-  |
-  v
-Landing
-  |
-  v
-Bronze
-  |
-  v
-Silver
-  |
-  v
-Gold
-```
 
 ---
 
 ## Data Layers
 
-MediNexus follows a **Medallion Architecture** consisting of Landing, Bronze, Silver, and Gold layers.
+MediNexus implements the **Landing → Bronze → Silver → Gold** processing layers described in the architecture above.
 
 ### Landing Layer
 
@@ -195,9 +186,7 @@ These datasets are consumed by **Databricks Dashboards and Genie** for healthcar
 
 ### 1. Patient 360
 
-`patient_360`
-
-Provides a consolidated patient-level view containing information such as:
+`patient_360` provides a consolidated patient-level analytical view containing:
 
 - Patient information
 - Hospital association
@@ -210,13 +199,9 @@ Provides a consolidated patient-level view containing information such as:
 
 The dataset maintains one analytical record per patient.
 
----
-
 ### 2. Hospital Daily Summary
 
-`hospital_daily_summary`
-
-Provides hospital-level analytical metrics such as:
+`hospital_daily_summary` provides hospital-level analytical metrics such as:
 
 - Hospital
 - Test date
@@ -232,13 +217,9 @@ Provides hospital-level analytical metrics such as:
 
 Window functions such as `LAG()` are used for previous-period comparisons.
 
----
-
 ### 3. Lab Test Trends
 
-`lab_test_trends`
-
-Provides laboratory testing trends across time.
+`lab_test_trends` provides laboratory testing trends across time.
 
 Metrics include:
 
@@ -252,8 +233,6 @@ Metrics include:
 - Abnormal rate change
 
 The month-over-month abnormal rate change is represented as a **percentage-point difference**.
-
----
 
 # Metadata-Driven Framework
 
