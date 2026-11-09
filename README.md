@@ -270,163 +270,114 @@ Tracks table-level pipeline execution using the ADF run ID, table ID, processing
 
 The control-table framework provides a centralized mechanism for **configuration, incremental processing, and execution tracking**.
 
-# Azure Data Factory Architecture
+## Azure Data Factory Architecture
 
-Azure Data Factory acts as the **orchestration layer** of MediNexus. It manages source ingestion, metadata-driven table processing, Databricks notebook execution, audit handling, watermark processing, and Gold-layer orchestration.
+Azure Data Factory acts as the **orchestration layer** of MediNexus. It manages metadata-driven source ingestion, table-level processing, Databricks notebook execution, audit handling, incremental watermark processing, Gold-layer orchestration, and execution notifications.
 
-The ADF architecture is built around a reusable pipeline hierarchy rather than separate hard-coded pipelines for each source table.
+The framework uses reusable pipelines rather than separate hard-coded pipelines for individual source tables.
 
-## Pipeline Architecture
+### Pipeline Architecture
 
-The main orchestration pipeline is `PL_MASTER`.
+`PL_MASTER` is the top-level orchestration pipeline. It coordinates the PostgreSQL and ADLS CSV processing branches and starts the Silver-to-Gold stage after the required upstream processing completes.
 
-![MediNexus PL_MASTER](./screenshots/azure-data-factory/PL_MASTER.png)
+<img src="./screenshots/azure-data-factory/PL_MASTER.png" width="700">
 
-`PL_MASTER` coordinates the major processing stages:
+### `PL_SOURCE_TO_SILVER`
 
-```text
-                         PL_MASTER
-                             |
-              +--------------+--------------+
-              |                             |
-              v                             v
-      PL_SOURCE_TO_SILVER          PL_SOURCE_TO_SILVER
-        Neon PostgreSQL                ADLS CSV
-              |                             |
-              +--------------+--------------+
-                             |
-                             v
-                     Silver to GOLD
-```
+`PL_SOURCE_TO_SILVER` is the metadata-driven outer pipeline. It reads active table configurations from `ctrl.table_config`, iterates through the returned `table_id` values, and invokes `PL_SOURCE_TO_SILVER_INNER` for each table.
 
-The PostgreSQL and ADLS CSV ingestion branches are executed independently, while Gold processing runs after the required upstream processing completes.
+<img src="./screenshots/azure-data-factory/PL_SOURCE_TO_SILVER.png" width="700">
 
----
+This allows multiple source tables to use the same processing framework instead of requiring a separate pipeline for each table.
 
-## ADF Pipeline Hierarchy
+### `PL_SOURCE_TO_SILVER_INNER`
 
-### 1. PL_MASTER
+`PL_SOURCE_TO_SILVER_INNER` performs the table-level processing defined by the metadata configuration.
 
-`PL_MASTER` is the top-level orchestration pipeline.
+<img src="./screenshots/azure-data-factory/PL_SOURCE_TO_SILVER_INNER.png" width="700">
 
-It is responsible for:
+The pipeline:
 
-- Starting PostgreSQL source processing
-- Starting ADLS CSV source processing
-- Passing the master `adf_run_id` to child pipelines
-- Coordinating the upstream processing branches
-- Starting the Silver-to-Gold processing stage
+- Reads table configuration from `ctrl.table_config`
+- Determines the configured load type
+- Reads the watermark when required
+- Selects the appropriate source-processing path
+- Copies source data into the Landing layer
+- Executes Landing → Bronze processing
+- Executes Bronze → Silver processing
+- Records execution status in the audit framework
+- Updates the watermark after successful processing
 
----
+The same pipeline supports the configured **FULL, APPEND, and MERGE** processing strategies.
 
-### 2. PL_SOURCE_TO_SILVER
-
-`PL_SOURCE_TO_SILVER` is the metadata-driven outer pipeline.
-
-![MediNexus PL_SOURCE_TO_SILVER](./screenshots/azure-data-factory/PL_SOURCE_TO_SILVER.png)
-
-It:
-
-1. Queries `ctrl.table_config` for active tables belonging to the selected source system.
-2. Retrieves the corresponding `table_id` values.
-3. Iterates through the returned metadata using a ForEach activity.
-4. Invokes `PL_SOURCE_TO_SILVER_INNER` for each table.
-5. Passes the required `table_id` and `adf_run_id` to the inner pipeline.
-
-This allows the same processing framework to handle multiple source tables without creating separate pipelines for each table.
-
----
-
-### 3. PL_SOURCE_TO_SILVER_INNER
-
-`PL_SOURCE_TO_SILVER_INNER` performs the processing for an individual metadata-defined table.
-
-![MediNexus PL_SOURCE_TO_SILVER_INNER](./screenshots/azure-data-factory/PL_SOURCE_TO_SILVER_INNER.png)
-
-The pipeline performs the following steps:
-
-- Read table configuration from `ctrl.table_config`
-- Capture the processing start time
-- Determine the configured load type
-- Read the watermark when required
-- Select the appropriate source-processing path
-- Copy source data into the Landing layer
-- Execute Landing → Bronze processing
-- Execute Bronze → Silver processing
-- Record audit information
-- Update the watermark after successful processing
-
-The same inner pipeline is reused for different tables and load strategies such as **Full, Append, and Merge**.
-
----
-
-### 4. Silver to GOLD
+### `Silver to GOLD`
 
 The `Silver to GOLD` pipeline manages the final transformation stage.
 
-![MediNexus Silver to GOLD](./screenshots/azure-data-factory/Silver_to_GOLD.png)
+<img src="./screenshots/azure-data-factory/Silver_to_GOLD.png" width="700">
 
-It uses the Gold-stage metadata configuration to determine which Gold dataset needs to be processed and dynamically invokes the corresponding Databricks notebook.
+It uses the Gold-stage metadata configuration to identify the required Gold dataset and dynamically invokes the corresponding Databricks notebook.
 
-Conceptually:
+Current Gold processing includes:
 
-```text
-                 ctrl.table_config
-                        |
-                        v
-                gold_table_name
-                        |
-                        v
-              Dynamic Notebook Path
-                  /      |       \
-                 /       |        \
-                v        v         v
-        patient_360   hospital_   lab_test_
-                     daily_summary  trends
-```
+- `patient_360`
+- `hospital_daily_summary`
+- `lab_test_trends`
 
-This metadata-driven approach allows new Gold datasets to be integrated by extending the configuration rather than creating a completely new orchestration framework.
+### `PL_SEND_EMAIL`
 
----
+After the main processing workflow, `PL_SEND_EMAIL` handles execution notification through the Logic App integration.
 
-## ADF Execution Flow
+<img src="./screenshots/azure-data-factory/PL_SEND_EMAIL.png" width="700">
 
-The overall processing sequence is:
+The pipeline sends the execution information to the Logic App, which triggers an email notification containing the processing status and audit information for the master run.
+
+### End-to-End ADF Flow
+
+The complete orchestration follows this sequence:
 
 ```text
 Source Systems
-      |
-      v
-   PL_MASTER
-      |
-      +-----------------------+
-      |                       |
-      v                       v
-PostgreSQL              ADLS CSV
-      |                       |
-      v                       v
-PL_SOURCE_TO_SILVER    PL_SOURCE_TO_SILVER
-      |                       |
-      v                       v
-PL_SOURCE_TO_SILVER_INNER
-      |
-      +--> Landing
-      |
-      +--> Bronze
-      |
-      +--> Silver
-      |
-      +-----------------------+
-                              |
-                              v
-                       Silver to GOLD
-                              |
-                              v
-                     Gold Databricks
-                        Notebooks
+      │
+      ▼
+  PL_MASTER
+      │
+      ├───────────────┐
+      ▼               ▼
+PostgreSQL         ADLS CSV
+      │               │
+      └───────┬───────┘
+              ▼
+   PL_SOURCE_TO_SILVER
+              │
+              ▼
+ PL_SOURCE_TO_SILVER_INNER
+              │
+       ┌──────┼──────┐
+       ▼      ▼      ▼
+    Landing Bronze Silver
+                     │
+                     ▼
+              Silver to GOLD
+                     │
+                     ▼
+             Gold Notebooks
+                     │
+                     ▼
+              PL_SEND_EMAIL
+                     │
+                     ▼
+                 Logic App
+                     │
+                     ▼
+             Email Notification
 ```
 
-The architecture provides a **reusable, metadata-driven orchestration framework** in which source-specific ingestion and table-level processing are separated from the overall pipeline orchestration.
+A successful master execution is recorded through the ADF audit framework and followed by the configured email notification.
+
+<img src="./screenshots/azure-data-factory/adf-pl-master-run-success.png" width="700">
+
+This architecture provides a **reusable, metadata-driven orchestration framework** in which source ingestion, table-level processing, transformation, auditing, and notification are handled through coordinated ADF pipelines.
 
 # Databricks Architecture
 
