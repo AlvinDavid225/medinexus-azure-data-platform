@@ -685,11 +685,24 @@ Security-related Azure services are incorporated into the platform.
 
 ## Azure Key Vault
 
-Key Vault is used as the secure location for secrets and credentials required by the data platform.
+MediNexus uses **Azure Key Vault** to securely manage credentials required by the data platform. Secrets are stored in Key Vault rather than being hard-coded in pipeline configurations.
 
-The architecture avoids embedding sensitive credentials directly into pipeline logic where possible.
+The development environment contains secrets for the Databricks, Azure SQL Database, and PostgreSQL connections.
 
----
+<table>
+  <tr>
+    <td align="center">
+      <img src="./screenshots/azure-infrastructure/Key%20Vault.png" width="500">
+    </td>
+    <td align="center">
+      <img src="./screenshots/azure-infrastructure/key-vault-secrets.png" width="500">
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><b>Key Vault Overview</b></td>
+    <td align="center"><b>Configured Secrets</b></td>
+  </tr>
+</table>
 
 ## Unity Catalog
 
