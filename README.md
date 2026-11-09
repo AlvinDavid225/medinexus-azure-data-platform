@@ -656,7 +656,7 @@ The Landing layer uses an external volume:
 adb_medinexus.landing.landing_volume
 ```
 
-![MediNexus Landing Volume](./screenshots/databricks/databricks-landing-volume.png)
+![MediNexus Landing Volume](./screenshots/databricks/unity-catalog/databricks-landing-volume.png)
 
 The external volume provides the Databricks-accessible storage location used by the Landing layer.
 
@@ -670,7 +670,7 @@ MediNexus implements a **Bronze → Silver → Gold** processing architecture us
 
 The Bronze layer contains the ingested datasets converted into Delta tables.
 
-![MediNexus Bronze Tables](./screenshots/databricks/databricks-bronze-tables.png)
+![MediNexus Bronze Tables](./screenshots/databricks/unity-catalog/databricks-bronze-tables.png)
 
 Current Bronze datasets include:
 
@@ -686,7 +686,7 @@ Current Bronze datasets include:
 
 The Silver layer contains cleaned and transformed datasets used for downstream processing.
 
-![MediNexus Silver Tables](./screenshots/databricks/databricks-silver-tables.png)
+![MediNexus Silver Tables](./screenshots/databricks/unity-catalog/databricks-silver-tables.png)
 
 Silver processing includes transformations such as:
 
@@ -703,7 +703,7 @@ Silver processing includes transformations such as:
 
 The Gold layer contains analytics-ready datasets designed for healthcare consumption.
 
-![MediNexus Gold Tables](./screenshots/databricks/databricks-gold-tables.png)
+![MediNexus Gold Tables](./screenshots/databricks/unity-catalog/databricks-gold-tables.png)
 
 MediNexus currently produces:
 
