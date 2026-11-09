@@ -460,110 +460,161 @@ This provides table-level execution visibility.
 
 # Azure Data Factory Architecture
 
-ADF acts as the orchestration layer.
+Azure Data Factory acts as the **orchestration layer** of MediNexus. It manages source ingestion, metadata-driven table processing, Databricks notebook execution, audit handling, watermark processing, and Gold-layer orchestration.
 
-The main orchestration pipeline is:
+The ADF architecture is built around a reusable pipeline hierarchy rather than separate hard-coded pipelines for each source table.
+
+## Pipeline Architecture
+
+The main orchestration pipeline is `PL_MASTER`.
+
+![MediNexus PL_MASTER](./screenshots/azure-data-factory/PL_MASTER.png)
+
+`PL_MASTER` coordinates the major processing stages:
 
 ```text
-PL_MASTER
+                         PL_MASTER
+                             |
+              +--------------+--------------+
+              |                             |
+              v                             v
+      PL_SOURCE_TO_SILVER          PL_SOURCE_TO_SILVER
+        Neon PostgreSQL                ADLS CSV
+              |                             |
+              +--------------+--------------+
+                             |
+                             v
+                     Silver to GOLD
 ```
 
-It coordinates:
+The PostgreSQL and ADLS CSV ingestion branches are executed independently, while Gold processing runs after the required upstream processing completes.
+
+---
+
+## ADF Pipeline Hierarchy
+
+### 1. PL_MASTER
+
+`PL_MASTER` is the top-level orchestration pipeline.
+
+It is responsible for:
+
+- Starting PostgreSQL source processing
+- Starting ADLS CSV source processing
+- Passing the master `adf_run_id` to child pipelines
+- Coordinating the upstream processing branches
+- Starting the Silver-to-Gold processing stage
+
+---
+
+### 2. PL_SOURCE_TO_SILVER
+
+`PL_SOURCE_TO_SILVER` is the metadata-driven outer pipeline.
+
+![MediNexus PL_SOURCE_TO_SILVER](./screenshots/azure-data-factory/PL_SOURCE_TO_SILVER.png)
+
+It:
+
+1. Queries `ctrl.table_config` for active tables belonging to the selected source system.
+2. Retrieves the corresponding `table_id` values.
+3. Iterates through the returned metadata using a ForEach activity.
+4. Invokes `PL_SOURCE_TO_SILVER_INNER` for each table.
+5. Passes the required `table_id` and `adf_run_id` to the inner pipeline.
+
+This allows the same processing framework to handle multiple source tables without creating separate pipelines for each table.
+
+---
+
+### 3. PL_SOURCE_TO_SILVER_INNER
+
+`PL_SOURCE_TO_SILVER_INNER` performs the processing for an individual metadata-defined table.
+
+![MediNexus PL_SOURCE_TO_SILVER_INNER](./screenshots/azure-data-factory/PL_SOURCE_TO_SILVER_INNER.png)
+
+The pipeline performs the following steps:
+
+- Read table configuration from `ctrl.table_config`
+- Capture the processing start time
+- Determine the configured load type
+- Read the watermark when required
+- Select the appropriate source-processing path
+- Copy source data into the Landing layer
+- Execute Landing → Bronze processing
+- Execute Bronze → Silver processing
+- Record audit information
+- Update the watermark after successful processing
+
+The same inner pipeline is reused for different tables and load strategies such as **Full, Append, and Merge**.
+
+---
+
+### 4. Silver to GOLD
+
+The `Silver to GOLD` pipeline manages the final transformation stage.
+
+![MediNexus Silver to GOLD](./screenshots/azure-data-factory/Silver_to_GOLD.png)
+
+It uses the Gold-stage metadata configuration to determine which Gold dataset needs to be processed and dynamically invokes the corresponding Databricks notebook.
+
+Conceptually:
 
 ```text
-                    PL_MASTER
-                        |
-        +---------------+---------------+
-        |                               |
-        v                               v
-SOURCE_TO_SILVER                 SOURCE_TO_SILVER
-   PostgreSQL                       ADLS CSV
-        |                               |
-        +---------------+---------------+
+                 ctrl.table_config
                         |
                         v
-                 SILVER TO GOLD
+                gold_table_name
+                        |
+                        v
+              Dynamic Notebook Path
+                  /      |       \
+                 /       |        \
+                v        v         v
+        patient_360   hospital_   lab_test_
+                     daily_summary  trends
 ```
 
-The PostgreSQL and CSV processing branches can run independently before the Gold processing stage.
-
-Gold processing starts after the required upstream branches successfully complete.
+This metadata-driven approach allows new Gold datasets to be integrated by extending the configuration rather than creating a completely new orchestration framework.
 
 ---
 
-# ADF Pipeline Hierarchy
+## ADF Execution Flow
 
-## PL_MASTER
-
-Master orchestration pipeline.
-
-Responsibilities:
-
-- Start source ingestion
-- Execute PostgreSQL ingestion
-- Execute CSV ingestion
-- Wait for upstream processing
-- Start Gold processing
-
----
-
-## PL_SOURCE_TO_SILVER
-
-Metadata-driven outer pipeline.
-
-Responsibilities:
-
-1. Query active metadata.
-2. Identify tables for the selected source system.
-3. Iterate through the metadata.
-4. Invoke the inner processing pipeline.
-
----
-
-## PL_SOURCE_TO_SILVER_INNER
-
-Per-table processing pipeline.
-
-Responsibilities include:
-
-- Read table metadata
-- Set execution start time
-- Determine load type
-- Read watermark when required
-- Select source-specific processing
-- Copy data to Landing
-- Execute Landing → Bronze
-- Execute Bronze → Silver
-- Write audit information
-- Update watermark after successful processing
-
----
-
-## Silver to GOLD
-
-Gold orchestration pipeline.
-
-It reads the Gold-stage metadata and dynamically invokes the appropriate Databricks notebook.
-
-Example:
+The overall processing sequence is:
 
 ```text
-table_config
-     |
-     v
-gold_table_name
-     |
-     v
-Dynamic Notebook Path
-     |
-     +--> NB_patient_360
-     |
-     +--> NB_hospital_daily_summary
-     |
-     +--> NB_lab_test_trends
+Source Systems
+      |
+      v
+   PL_MASTER
+      |
+      +-----------------------+
+      |                       |
+      v                       v
+PostgreSQL              ADLS CSV
+      |                       |
+      v                       v
+PL_SOURCE_TO_SILVER    PL_SOURCE_TO_SILVER
+      |                       |
+      v                       v
+PL_SOURCE_TO_SILVER_INNER
+      |
+      +--> Landing
+      |
+      +--> Bronze
+      |
+      +--> Silver
+      |
+      +-----------------------+
+                              |
+                              v
+                       Silver to GOLD
+                              |
+                              v
+                     Gold Databricks
+                        Notebooks
 ```
 
----
+The architecture provides a **reusable, metadata-driven orchestration framework** in which source-specific ingestion and table-level processing are separated from the overall pipeline orchestration.
 
 # Databricks Architecture
 
