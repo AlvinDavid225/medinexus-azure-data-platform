@@ -222,195 +222,53 @@ Metrics include:
 
 The month-over-month abnormal rate change is represented as a **percentage-point difference**.
 
-# Metadata-Driven Framework
+## Metadata-Driven Framework
 
-One of the core features of MediNexus is its metadata-driven architecture.
-
-Instead of hard-coding every table into the orchestration framework, configuration is stored in Azure SQL Database.
-
-The primary metadata table is:
-
-```text
-ctrl.table_config
-```
-
-The configuration determines how each dataset should be processed.
-
-Example configuration concepts:
-
-```text
-table_id
-source_system
-source_schema_name
-source_table_name
-source_file_format
-source_path
-bronze_table_name
-silver_table_name
-gold_table_name
-load_type
-watermark_column
-merge_keys
-stage
-is_active
-```
+MediNexus uses a **metadata-driven framework** where Azure SQL control tables define how each dataset is ingested, transformed, and monitored. This allows the same ADF pipeline logic to process multiple datasets without hard-coded table-specific pipelines.
 
 ---
 
-# Load Types
+## Load Types
 
-The framework currently supports multiple loading strategies.
+The framework supports three load strategies:
 
-## FULL
+### FULL
 
-Used when the complete dataset is loaded.
+Loads the complete source dataset and refreshes the target dataset.
 
-Example:
+### APPEND
 
-```text
-Source
-  |
-  v
-Landing
-  |
-  v
-Bronze
-  |
-  v
-Silver overwrite
-```
+Adds new records to the existing Silver dataset. `lab_results` currently uses an append-oriented incremental pattern.
+
+### MERGE
+
+Updates existing records and inserts new records based on configured merge keys. `patients` currently uses a MERGE strategy.
 
 ---
 
-## APPEND
+## Metadata Control Tables
 
-Used for datasets where new records are added over time.
+MediNexus uses three centralized Azure SQL control tables to manage configuration, incremental state, and pipeline execution.
 
-Example:
+### `ctrl.table_config`
 
-```text
-Existing Silver
-      +
-New Records
-      |
-      v
-Updated Silver
-```
+![Table Configuration](./screenshots/azure-sql-metadata/01-sql-table-config.png)
 
-`lab_results` currently uses an append-oriented incremental pattern.
+Defines source and target configuration, load type, watermark column, merge keys, processing stage, and active status.
 
----
+### `ctrl.watermark`
 
-## MERGE
+![Watermark Configuration](./screenshots/azure-sql-metadata/ctrl.watermark.png)
 
-Used when existing records may be updated and new records may be inserted.
+Maintains the incremental processing state, including the current watermark value and its update information.
 
-Example:
+### `ctrl.audit_log`
 
-```text
-Source
-  |
-  v
-Watermark Filter
-  |
-  v
-Silver MERGE
-  |
-  +---- Existing key -> UPDATE
-  |
-  +---- New key ------> INSERT
-```
+![Audit Log](./screenshots/azure-sql-metadata/ctrl.audit_log.png)
 
-The `patients` dataset currently uses a MERGE strategy.
+Tracks table-level pipeline execution using the ADF run ID, table ID, processing stage, status, record count, and execution timestamps.
 
----
-
-# Incremental Processing
-
-MediNexus implements incremental processing using watermarks.
-
-The watermark metadata is maintained in:
-
-```text
-ctrl.watermark
-```
-
-Example concepts:
-
-```text
-table_id
-watermark_value
-last_updated_timestamp
-```
-
-For incremental datasets, the pipeline uses a configured source column to identify new or changed records.
-
-For example:
-
-```text
-patients
-    |
-    +-- watermark_column = updated_at
-    |
-    +-- merge_keys = patient_id
-```
-
-This allows the pipeline to avoid unnecessarily processing the entire source dataset on every execution.
-
----
-
-# Metadata Control Tables
-
-The framework uses centralized Azure SQL control tables.
-
-## 1. `ctrl.table_config`
-
-Controls how each dataset should be processed.
-
-Responsibilities:
-
-- Source configuration
-- Target configuration
-- Load type
-- Watermark configuration
-- Merge keys
-- Pipeline stage
-- Active/inactive status
-
----
-
-## 2. `ctrl.watermark`
-
-Maintains incremental processing state.
-
-Responsibilities:
-
-- Current watermark
-- Last watermark update information
-
----
-
-## 3. `ctrl.audit_log`
-
-Tracks pipeline execution.
-
-Example fields include:
-
-```text
-audit_id
-adf_run_id
-table_id
-stage
-status
-records_written
-start_time
-end_time
-created_timestamp
-```
-
-This provides table-level execution visibility.
-
----
+The control-table framework provides a centralized mechanism for **configuration, incremental processing, and execution tracking**.
 
 # Azure Data Factory Architecture
 
