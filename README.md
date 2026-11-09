@@ -43,71 +43,51 @@ MediNexus follows a **metadata-driven Azure data engineering architecture** that
 
 The architecture is designed around **reusable, metadata-driven processing**, allowing multiple datasets to be handled through a common pipeline framework rather than separate hard-coded pipelines.
 
-# Business Problem
+## Business Problem
 
-Healthcare organizations often receive data from multiple systems and external partners.
+Healthcare data is often distributed across operational databases and external file-based sources. This creates challenges around **data integration, transformation consistency, monitoring, scalability, and reporting**.
 
-For example:
-
-- Hospital information may exist in a PostgreSQL database.
-- Patient and doctor information may come from an operational database.
-- Laboratory results may arrive as CSV files.
-- Insurance provider information may arrive from another external source.
-
-Without a centralized data platform, organizations can face:
-
-- Manual data movement
-- Duplicate pipelines
-- Inconsistent transformations
-- Difficult monitoring
-- Limited data lineage
-- Delayed reporting
-- Difficult onboarding of new sources
-- Poor visibility into pipeline failures
-
-MediNexus addresses these challenges by implementing a centralized, metadata-driven Azure Data Engineering architecture.
+MediNexus addresses these challenges through a centralized, **metadata-driven Azure Data Engineering platform** that provides reusable ingestion pipelines, structured data processing, centralized audit and watermark management, governance, and analytics-ready datasets.
 
 ---
 
-# Key Objectives
+## Key Objectives
 
-The main objectives of MediNexus are:
+MediNexus was built to:
 
-1. Build an end-to-end Azure Data Engineering pipeline.
-2. Implement metadata-driven ingestion.
-3. Support multiple source systems.
-4. Support Full, Append, and Merge processing.
-5. Implement incremental processing using watermarks.
-6. Build a Medallion Architecture.
-7. Store processed data using Delta Lake.
-8. Implement governance using Unity Catalog.
-9. Implement centralized audit logging.
-10. Build analytics-ready Gold datasets.
-11. Implement pipeline success/failure notification.
-12. Provide healthcare analytics through dashboards.
-13. Establish Git-based source control.
-14. Build a foundation for CI/CD implementation.
+- Implement an end-to-end Azure data engineering pipeline.
+- Build reusable, metadata-driven ingestion.
+- Integrate multiple healthcare data sources.
+- Support **Full, Append, and Merge** load strategies.
+- Implement incremental processing using watermarks.
+- Implement a **Bronze → Silver → Gold** Medallion Architecture.
+- Use Delta Lake for reliable data processing and storage.
+- Implement centralized governance with Unity Catalog.
+- Maintain audit and execution information.
+- Produce analytics-ready Gold datasets.
+- Provide automated pipeline execution notifications.
+- Enable healthcare analytics through Databricks dashboards and Genie.
+- Maintain project assets using GitHub source control.
+- Establish a foundation for future CI/CD implementation.
 
 ---
 
-# Technology Stack
+## Technology Stack
 
 | Technology | Purpose |
 |---|---|
-| Azure Data Factory | Pipeline orchestration and metadata-driven ingestion |
-| Azure Data Lake Storage Gen2 | Landing and data storage |
-| Azure Databricks | Data transformation and processing |
-| Apache Spark / PySpark | Distributed data processing |
-| Delta Lake | Reliable transactional data storage |
-| Unity Catalog | Data governance and access control |
-| Azure SQL Database | Metadata, watermark and audit management |
-| Azure Key Vault | Secure secret management |
-| Azure Logic Apps | Email notification workflow |
-| GitHub | Source control and repository management |
-| Databricks Dashboards | Healthcare analytics |
-| Databricks Genie | Natural-language analytics |
-
----
+| **Azure Data Factory** | Metadata-driven ingestion and orchestration |
+| **Azure Data Lake Storage Gen2** | Landing and data storage |
+| **Azure Databricks** | Data processing and transformation |
+| **Apache Spark / PySpark** | Distributed data processing |
+| **Delta Lake** | Transactional data storage |
+| **Unity Catalog** | Data governance and access control |
+| **Azure SQL Database** | Metadata, watermark, and audit management |
+| **Azure Key Vault** | Secure secret management |
+| **Azure Logic Apps** | Automated email notifications |
+| **GitHub** | Source control |
+| **Databricks Dashboards** | Healthcare analytics |
+| **Databricks Genie** | Natural-language data exploration |
 
 # Source Systems
 
