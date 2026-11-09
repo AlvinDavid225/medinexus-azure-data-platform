@@ -144,35 +144,28 @@ Gold
 
 ---
 
-## Landing Layer
+## Data Layers
 
-The Landing layer stores incoming source data before transformation.
+MediNexus follows a **Medallion Architecture** consisting of Landing, Bronze, Silver, and Gold layers.
 
-The platform organizes landing data by source system, source table, and ingestion execution context.
+### Landing Layer
 
-Example concept:
+The Landing layer provides the raw ingestion boundary between source systems and Databricks processing.
 
-```text
-landing/
-├── neon_postgres/
-│   ├── hospitals/
-│   ├── doctors/
-│   └── patients/
-│
-└── adls_csv/
-    ├── lab_results/
-    └── insurance_providers/
-```
+MediNexus organizes incoming data by source system and source dataset within the Unity Catalog external volume.
 
-The Landing layer provides a raw ingestion boundary between the source systems and Databricks processing.
+![MediNexus Landing Folder Structure](./screenshots/architecture/medinexus-landing-folder-structure.png)
 
----
+The current landing structure separates data by source:
 
-# Bronze Layer
+- **`neon_postgres`** — `hospitals`, `doctors`, `patients`
+- **`adls_csv`** — `lab_results`, `insurance_providers`
 
-The Bronze layer stores the ingested data in Delta format.
+Azure Data Factory manages the ingestion of source data into the Landing layer before Databricks processing.
 
-The objective of Bronze is to preserve the incoming data while providing a reliable Delta-based processing layer.
+### Bronze Layer
+
+The Bronze layer stores the ingested datasets as **Delta tables** in Databricks.
 
 Current Bronze datasets include:
 
@@ -182,34 +175,36 @@ Current Bronze datasets include:
 - `lab_results`
 - `insurance_providers`
 
-Bronze processing is intentionally separated from business-level transformations.
+Bronze provides a reliable Delta-based processing layer while keeping source ingestion separate from business-level transformations.
 
----
+### Silver Layer
 
-# Silver Layer
-
-The Silver layer contains cleaned and transformed data suitable for analytical processing.
+The Silver layer contains cleaned and transformed datasets prepared for downstream analytical processing.
 
 Silver processing includes:
 
-- Data transformation
-- Incremental processing
+- Data transformation and standardization
 - Deduplication
+- Incremental processing
 - Merge/upsert processing
 - Append processing
-- Full refresh processing
+- Full-load processing
 - Data quality validation
-- Silver audit timestamps
+- Audit timestamp generation
 
-The Silver layer contains the primary business-ready datasets used by the Gold transformations.
+The Silver layer provides the primary business-ready datasets used by the Gold transformations.
 
----
-
-# Gold Layer
+### Gold Layer
 
 The Gold layer contains analytics-ready datasets designed for business consumption.
 
 MediNexus currently produces three major Gold datasets:
+
+- `patient_360`
+- `hospital_daily_summary`
+- `lab_test_trends`
+
+These datasets are consumed by **Databricks Dashboards and Genie** for healthcare analytics and reporting.
 
 ### 1. Patient 360
 
