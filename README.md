@@ -600,34 +600,26 @@ Provides analytical views of laboratory testing activity and related healthcare 
 The dashboard consumes the **Gold-layer datasets** produced by the MediNexus data pipeline, providing a final analytics and consumption layer for the platform.
 
 
-# Databricks Genie
+## Databricks Genie
 
-MediNexus also includes a Databricks Genie experience for natural-language analytics.
+MediNexus also includes a **Databricks Genie** experience for natural-language analytics. Users can ask questions about the curated Gold datasets in plain English without manually writing SQL.
 
-The objective is to allow users to ask questions about the healthcare datasets without manually writing SQL.
+### Examples
 
-Example:
-
-```text
-Question:
-"I want state wise patient count"
-
-Result:
-Patient distribution by state
-```
-
-<!-- SCREENSHOT PLACEHOLDER
-Add Genie screenshot here.
-
-Suggested file:
-docs/images/databricks-genie.png
--->
-
-```text
-[ SCREENSHOT — DATABRICKS GENIE ]
-```
-
----
+<table>
+  <tr>
+    <td align="center">
+      <img src="./screenshots/databricks/databricks-genie/databricks-genie-patients-by-state.png" width="500">
+    </td>
+    <td align="center">
+      <img src="./screenshots/databricks/databricks-genie/databricks-genie-patients-by-hospital.png" width="500">
+    </td>
+  </tr>
+  <tr>
+    <td align="center"><b>Patients Registered by State</b></td>
+    <td align="center"><b>Patients Registered by Hospital</b></td>
+  </tr>
+</table>
 
 # Pipeline Monitoring and Audit
 
