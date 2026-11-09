@@ -89,62 +89,39 @@ MediNexus was built to:
 | **Databricks Dashboards** | Healthcare analytics |
 | **Databricks Genie** | Natural-language data exploration |
 
-# Source Systems
+## Source Systems
 
-MediNexus currently integrates data from multiple sources.
+MediNexus integrates healthcare data from multiple source systems and file-based datasets through a common metadata-driven ingestion framework.
 
-## 1. Neon PostgreSQL
+![MediNexus Source Tables](./screenshots/architecture/medinexus-source-tables.png)
 
-Operational healthcare data is sourced from PostgreSQL tables such as:
+### 1. Neon PostgreSQL
+
+Operational healthcare data is sourced from PostgreSQL tables:
 
 - `hospitals`
 - `doctors`
 - `patients`
 
-Example:
+These datasets are ingested through Azure Data Factory and processed through the Landing, Bronze, and Silver layers.
 
-```text
-Neon PostgreSQL
-       |
-       v
-Azure Data Factory
-       |
-       v
-ADLS Landing
-       |
-       v
-Databricks Bronze
-       |
-       v
-Databricks Silver
-```
+### 2. ADLS CSV Sources
 
----
-
-## 2. ADLS CSV Sources
-
-External healthcare data is represented through CSV datasets such as:
+External healthcare datasets are provided as CSV files:
 
 - `lab_results`
 - `insurance_providers`
 
-These files are processed through the same metadata-driven ingestion framework.
+These datasets use the same metadata-driven ingestion framework and are processed through the Landing, Bronze, and Silver layers.
 
-```text
-CSV Files
-   |
-   v
-ADLS Landing
-   |
-   v
-Bronze
-   |
-   v
-Silver
-```
+### Source Integration
 
----
+| Source | Datasets | Format | Ingestion |
+|---|---|---|---|
+| **Neon PostgreSQL** | hospitals, doctors, patients | PostgreSQL | Azure Data Factory |
+| **ADLS CSV** | lab_results, insurance_providers | CSV | Azure Data Factory |
 
+This source-independent design allows MediNexus to process different data sources through a reusable ingestion framework.
 # Medallion Architecture
 
 MediNexus follows a Medallion Architecture consisting of:
